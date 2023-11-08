@@ -20,3 +20,16 @@ class RestaurantRecommenderInterface(ABC):
         # return a list of (business name, business_id, estimated rating)
         pass
 
+
+class Serializable(ABC):
+    @abstractmethod
+    def save(self, filename: str):
+        pass
+
+
+class Deserializable(ABC):
+    @abstractmethod
+    @classmethod
+    def load(cls, filename: str):
+        pass
+
