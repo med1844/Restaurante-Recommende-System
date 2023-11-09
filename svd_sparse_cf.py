@@ -1,13 +1,16 @@
-from interface import RestaurantRecommenderInterface, Json
+from io import TextIOWrapper
+import json
+from interface import RestaurantRecommenderInterface, Json, Serializable, Deserializable
 from typing import List, Optional, Tuple
 import numpy as np
 from scipy.sparse.linalg import svds
 from scipy.sparse import csr_matrix, lil_matrix
 from result import Result, Ok, Err
 from heapq import heappush, heappop
+import pickle
 
 
-class SVDSparseCollaborativeFiltering:
+class SVDSparseCollaborativeFilteringModel(Serializable, Deserializable):
     def __init__(self, k: int) -> None:
         self.u: Optional[np.ndarray] = None
         self.s: Optional[np.ndarray] = None
@@ -34,10 +37,26 @@ class SVDSparseCollaborativeFiltering:
             return Ok([((i, j), val) for val, (i, j) in sorted(heap, key=lambda x: x[1], reverse=True)])
         return Err("not fit yet")
 
+    def save(self, fp: TextIOWrapper) -> Result[None, str]:
+        if self.u is not None and self.s is not None and self.vt is not None:
+            json.dump({
+                "u": json.dumps(pickle.dumps(self.u).decode("latin-1")),
+                "s": json.dumps(pickle.dumps(self.s).decode("latin-1")),
+                "vt": json.dumps(pickle.dumps(self.vt).decode("latin-1")),
+            }, fp)
+            return Ok(None)
+        return Err("not fit yet")
 
-class SVDSparseCollaborativeFilteringWrapperModel(RestaurantRecommenderInterface):
+    def load(self, fp: TextIOWrapper):
+        obj = json.load(fp)
+        self.u = pickle.loads(json.loads(obj["u"]).encode("latin-1"))
+        self.s = pickle.loads(json.loads(obj["s"]).encode("latin-1"))
+        self.vt = pickle.loads(json.loads(obj["vt"]).encode("latin-1"))
+
+
+class SVDSparseCollaborativeFilteringRecommender(RestaurantRecommenderInterface, Serializable, Deserializable):
     def __init__(self, user: List[Json], business: List[Json], review: List[Json], k: int) -> None:
-        self.model = SVDSparseCollaborativeFiltering(k)
+        self.model = SVDSparseCollaborativeFilteringModel(k)
         self.user = user
         self.business = business
         self.review = review
@@ -54,3 +73,8 @@ class SVDSparseCollaborativeFilteringWrapperModel(RestaurantRecommenderInterface
             case Err(msg):
                 return Err(msg)
 
+    def save(self, fp: TextIOWrapper) -> Result[None, str]:
+        return self.model.save(fp)
+
+    def load(self, fp: TextIOWrapper):
+        self.model.load(fp)

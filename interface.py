@@ -1,6 +1,7 @@
 from typing import List, Tuple, Dict, Any
 from abc import ABC, abstractmethod
 from result import Result
+from io import TextIOWrapper
 
 
 Json = Dict[str, Any]
@@ -23,13 +24,12 @@ class RestaurantRecommenderInterface(ABC):
 
 class Serializable(ABC):
     @abstractmethod
-    def save(self, filename: str):
+    def save(self, fp: TextIOWrapper) -> Result[None, str]:
         pass
 
 
 class Deserializable(ABC):
     @abstractmethod
-    @classmethod
-    def load(cls, filename: str):
+    def load(self, fp: TextIOWrapper):
         pass
 
