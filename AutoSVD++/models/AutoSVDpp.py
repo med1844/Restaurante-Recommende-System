@@ -114,6 +114,7 @@ class AutoSVDpp():
         np.save(os.path.join(directory, "U_pp.npy"), self.U)
         np.save(os.path.join(directory, "Y_pp.npy"), self.Y)
         np.save(os.path.join(directory, "beta_pp.npy"), self.beta)
+        np.save(os.path.join(directory, "average_rating_pp.npy"), self.average_rating)
 
     def load_model(self, directory='parameters/'):
         # load the matrix from the file
@@ -123,6 +124,7 @@ class AutoSVDpp():
         self.U = np.load(os.path.join(directory, "U_pp.npy"))
         self.Y = np.load(os.path.join(directory, "Y_pp.npy"))
         self.beta = np.load(os.path.join(directory, "beta_pp.npy"))
+        self.average_rating = np.load(os.path.join(directory, "average_rating_pp.npy"))
 
     def readItemFeature(self):
         df_restaurants = pd.read_csv(self.path_of_feature_file)
