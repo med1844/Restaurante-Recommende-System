@@ -47,16 +47,16 @@ mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
 
 neumf_config = {'alias': 'pretrain_neumf_factor8neg4',
                 'num_epoch': 500,
-                'batch_size': 1024,
+                'batch_size': 512, # 1024
                 'optimizer': 'adam',
                 'adam_lr': 1e-3,
-                'num_users': 961,
-                'num_items': 1000,
+                'num_users': 961, # 248490
+                'num_items': 1000, # 148095
                 'latent_dim_mf': 8,
                 'latent_dim_mlp': 8,
                 'num_negative': 4,
                 'layers': [16,64,32,16,8],  # layers[0] is the concat of latent user vector & latent item vector
-                'l2_regularization': 0.01,
+                'l2_regularization': 0.0000001,
                 'use_cuda': True,
                 'device_id': 7,
                 'pretrain': False,
@@ -110,7 +110,8 @@ def main():
   elif args.model == 'neumf':
     config = neumf_config
     engine = NeuMFEngine(config)
-
+  
+  print('Begin Training....')
   for epoch in range(config['num_epoch']+1):
       print('Epoch {} starts !'.format(epoch))
       print('-' * 80)
