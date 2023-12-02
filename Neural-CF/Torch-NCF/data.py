@@ -1,12 +1,38 @@
 import torch
 import random
 import pandas as pd
+import numpy as np
 from copy import deepcopy
 from torch.utils.data import DataLoader, Dataset
 from sklearn.model_selection import train_test_split
 
 random.seed(0)
 
+class YelpLoader():
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        self.yelp_rating = None
+
+    def load_data(self):
+        print('Loading Data....')
+        user_item_interactions = pd.read_json(self.data_dir, lines=True)
+        df = pd.DataFrame(user_item_interactions)
+        df = df.groupby(['user_id', 'business_id']).agg({'stars': 'mean'}).reset_index()
+
+        user_id = df[['user_id']].drop_duplicates().reindex()
+        user_id['userId'] = np.arange(len(user_id))
+        ml1m_rating = pd.merge(df, user_id, on=['user_id'], how='left')
+
+        item_id = df[['business_id']].drop_duplicates()
+        item_id['itemId'] = np.arange(len(item_id))
+        self.yelp_rating = pd.merge(ml1m_rating, item_id, on=['business_id'], how='left')
+        self.yelp_rating = self.yelp_rating[['userId', 'itemId', 'user_id', 'business_id', 'stars']]
+        self.yelp_rating.rename(columns={'stars': 'rating'}, inplace=True)
+
+    def get_yelp_rating(self):
+        if self.yelp_rating is None:
+            self.load_data()
+        return self.yelp_rating
 
 class UserItemRatingDataset(Dataset):
     """Wrapper, convert <user, item, rating> Tensor into Pytorch Dataset"""
@@ -40,16 +66,22 @@ class SampleGenerator(object):
         assert 'rating' in ratings.columns
 
         self.ratings = ratings
-        
+        self.chunk_size = 5000
         # explicit feedback using _normalize and implicit using _binarize
         # self.preprocess_ratings = self._normalize(ratings)
         self.preprocess_ratings = self._binarize(ratings)
-
         self.user_pool = set(self.ratings['userId'].unique())
         self.item_pool = set(self.ratings['itemId'].unique())
         # create negative item samples for NCF learning
         self.negatives = self._sample_negative(ratings)
         self.train_ratings, self.test_ratings = self._split_loo(self.preprocess_ratings)
+
+    def _load_data_chunk(self):
+        start = 0
+        while start < len(self.ratings):
+            end = start + self.chunk_size
+            yield self.ratings.iloc[start:end]
+            start = end        
 
     def _normalize(self, ratings):
         """normalize into [0, 1] from [0, max_rating], explicit feedback"""
@@ -59,7 +91,7 @@ class SampleGenerator(object):
         return ratings
     
     def _binarize(self, ratings):
-        """binarize into 0 or 1, implicit feedback"""
+        """binarize into 0 or 1, imlicit feedback"""
         ratings = deepcopy(ratings)
         ratings['rating'][ratings['rating'] > 0] = 1.0
         return ratings
@@ -79,16 +111,41 @@ class SampleGenerator(object):
         
     def _sample_negative(self, ratings):
         """return all negative items & 100 sampled negative items"""
+        print('Generating Negative Items...')
+
         interact_status = ratings.groupby('userId')['itemId'].apply(set).reset_index().rename(
             columns={'itemId': 'interacted_items'})
+        print(interact_status)
+
         interact_status['negative_items'] = interact_status['interacted_items'].apply(lambda x: self.item_pool - x)
-        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, min(99, len(x)))) # Modified to Handle Cases with Fewer Than 99 Items
-        print(interact_status[['userId', 'negative_items', 'negative_samples']])
+        print('-'*50)
+        print(interact_status)
+
+        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 20)) # min(99, len(x))
+        print('-'*50)
+        print(interact_status)
+
+        # negative_samples_list = []
+        # batch_size = 1000
+        # for start in range(0, len(interact_status), batch_size):
+        #     batch_interact_status = interact_status[start:start+batch_size].copy()
+        #     batch_interact_status['negative_items'] = batch_interact_status['interacted_items'].apply(
+        #         lambda x: self.item_pool - x)
+        #     batch_interact_status['negative_samples'] = batch_interact_status['negative_items'].apply(
+        #         lambda x: random.sample(x, min(20, len(x))))  # Adjust the sample size as needed
+        #     negative_samples_list.append(batch_interact_status[['userId', 'negative_items', 'negative_samples']])
+        # result_df = pd.concat(negative_samples_list, ignore_index=True)
+        # print('-'*50)
+        # print(result_df)        
+
         return interact_status[['userId', 'negative_items', 'negative_samples']]
+        # return result_df
 
     def instance_a_train_loader(self, num_negatives, batch_size):
         """instance train loader for one training epoch"""
         users, items, ratings = [], [], []
+
+        # Original
         train_ratings = pd.merge(self.train_ratings, self.negatives[['userId', 'negative_items']], on='userId')
         train_ratings['negatives'] = train_ratings['negative_items'].apply(lambda x: random.sample(x, num_negatives))
         for row in train_ratings.itertuples():
@@ -99,6 +156,20 @@ class SampleGenerator(object):
                 users.append(int(row.userId))
                 items.append(int(row.negatives[i]))
                 ratings.append(float(0))  # negative samples get 0 rating
+
+        # # Load in chunks
+        # for chunk in self._load_data_chunk():
+        #   train_ratings = pd.merge(self.train_ratings, self.negatives[['userId', 'negative_items']], on='userId')
+        #   train_ratings['negatives'] = train_ratings['negative_items'].apply(lambda x: random.sample(x, num_negatives))
+        #   for row in train_ratings.itertuples():
+        #       users.append(int(row.userId))
+        #       items.append(int(row.itemId))
+        #       ratings.append(float(row.rating))
+        #       for i in range(num_negatives):
+        #           users.append(int(row.userId))
+        #           items.append(int(row.negatives[i]))
+        #           ratings.append(float(0))  # negative samples get 0 rating                                                  
+
         dataset = UserItemRatingDataset(user_tensor=torch.LongTensor(users),
                                         item_tensor=torch.LongTensor(items),
                                         target_tensor=torch.FloatTensor(ratings))
