@@ -46,12 +46,12 @@ mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
               'model_dir':'checkpoints/{}_Epoch{}_HR{:.4f}_NDCG{:.4f}.model'}
 
 neumf_config = {'alias': 'pretrain_neumf_factor8neg4',
-                'num_epoch': 500,
-                'batch_size': 512, # 1024
+                'num_epoch': 100,
+                'batch_size': 1024, # 1024
                 'optimizer': 'adam',
                 'adam_lr': 1e-3,
-                'num_users': 961, # 248490
-                'num_items': 1000, # 148095
+                'num_users': 5000, # 961
+                'num_items': 5000, # 1000
                 'latent_dim_mf': 8,
                 'latent_dim_mlp': 8,
                 'num_negative': 4,
@@ -123,7 +123,7 @@ def main():
       # engine.save(config['alias'], epoch, hit_ratio, ndcg)
       # print('Model saved at epoch {}'.format(epoch))      
       
-      if epoch % 50 == 0:
+      if epoch % 10 == 0:
         engine.save(config['alias'], epoch, hit_ratio, ndcg)
         print('Model saved at epoch {}'.format(epoch))
 
