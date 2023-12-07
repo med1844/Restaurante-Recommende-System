@@ -1,5 +1,5 @@
-from models.AutoSVD import AutoSVD
-from utils.data_utils import load_data
+from ..models.AutoSVD import AutoSVD
+from data_utils import load_data
 import pandas as pd
 import numpy as np
 from random import randint
@@ -69,6 +69,16 @@ class YelpRecommendationGenerator():
         print("Number of users=" + str(n_users) + "; Number of items=" + str(n_items))  
         
         return df_business, df_review
+
+    def get_user_df(self, user_id: str):
+        # Find the user_idx for the given user_id
+        user_idx = self.df_review[self.df_review['user_id'] == user_id]['user_idx'].iloc[0]
+
+        # Filter df_review using the user_idx to create user_df
+        user_df = self.df_review[self.df_review['user_idx'] == user_idx]
+        user_df = user_df.groupby(['user_idx', 'business_idx']).agg({'stars': 'mean'}).reset_index()
+
+        return user_df
 
     def generate_sample_user(self):
         '''
