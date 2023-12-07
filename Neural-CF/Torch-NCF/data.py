@@ -121,7 +121,7 @@ class SampleGenerator(object):
         print('-'*50)
         print(interact_status)
 
-        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, 20)) # min(99, len(x))
+        interact_status['negative_samples'] = interact_status['negative_items'].apply(lambda x: random.sample(x, min(99, len(x)))) # min(99, len(x))
         print('-'*50)
         print(interact_status)
 
