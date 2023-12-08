@@ -2,8 +2,8 @@ import argparse
 import torch
 import pandas as pd
 import numpy as np
-from .neumf import NeuMFArchitecture
-from .data import YelpLoader, SampleGenerator
+from neumf import NeuMFArchitecture
+from data import YelpLoader, SampleGenerator
 from tqdm import tqdm
 
 from collections import OrderedDict
