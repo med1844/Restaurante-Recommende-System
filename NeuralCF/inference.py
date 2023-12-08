@@ -19,7 +19,7 @@ class RecommenderSystem:
         self.model_size = model_size
         self.neumf_model: Optional[NeuMFArchitecture] = None
 
-        neumf = torch.load(self.model_checkpoint)
+        neumf = torch.load(self.model_checkpoint, map_location=self.device)
         if self.model_size == "1k":
             config = {
                 "num_users": 961,

@@ -6,8 +6,11 @@ from random import choice, seed
 from typing import List, Any, Tuple
 from random_recommender import RandomRecommender
 import json
+import torch
 import os
 
+
+torch.cuda.is_available = lambda : False
 seed(6220)
 
 
@@ -26,7 +29,7 @@ def main():
     # model.predict("JyzLjUFEIW3epNlHI6Oa6Q")
 
     model = NeuralCFRecommender(
-        "./data/sample_reviews_train.json",
+        "./data/sample_reviews_test.json",
         # "./AutoSVDpp/datasets/subsets/yelp_academic_dataset_review.json",
         "./NeuralCF/Torch-NCF/checkpoints/checkpoints_neumf_5k_epoch100_l2-0.0000001/pretrain_neumf_factor8neg4_Epoch100_HR0.7258_NDCG0.3565.model",
         "5k",
