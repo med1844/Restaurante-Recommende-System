@@ -1,4 +1,5 @@
 import argparse
+from typing import Optional, Literal
 import torch
 import pandas as pd
 import numpy as np
@@ -10,14 +11,44 @@ from collections import OrderedDict
 
 
 class RecommenderSystem:
-    def __init__(self, data_dir, model_checkpoint, user_id, topK, model_size):
+    def __init__(self, data_dir, model_checkpoint, model_size: Literal["1k", "5k"]):
         self.data_dir = data_dir
         self.model_checkpoint = model_checkpoint
-        self.user_id = user_id
         self.converted_userId = None
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.topK = topK
         self.model_size = model_size
+        self.neumf_model: Optional[NeuMFArchitecture] = None
+
+        neumf = torch.load(self.model_checkpoint)
+        if self.model_size == "1k":
+            config = {
+                "num_users": 961,
+                "num_items": 1000,
+                "latent_dim_mf": 8,
+                "latent_dim_mlp": 8,
+                "num_negative": 4,
+                "layers": [16, 64, 32, 16, 8],
+                "use_cuda": True,
+            }
+        elif self.model_size == "5k":
+            config = {
+                "num_users": 5000,
+                "num_items": 5000,
+                "latent_dim_mf": 8,
+                "latent_dim_mlp": 8,
+                "num_negative": 4,
+                "layers": [16, 64, 32, 16, 8],
+                "use_cuda": True,
+            }
+        else:
+            raise ValueError("invalid model size, must be 1k or 5k")
+
+        neumf_model = NeuMFArchitecture(config)
+        neumf_model.load_state_dict(neumf)
+        neumf_model = neumf_model.to(self.device)
+        neumf_model.eval()
+
+        self.neumf_model = neumf_model
 
     def load_data(self):
         yelp_loader = YelpLoader(self.data_dir)
@@ -46,18 +77,17 @@ class RecommenderSystem:
             torch.LongTensor(negative_items),
         ]
 
-    def convert_userID(self, rating):
+    def convert_userID(self, user_id: str, rating):
         """Convert the dataset userId with user idx ID"""
 
         userId_conversion = rating.groupby("userId")["user_id"].unique().reset_index()
-        desired_user_name = self.user_id[1:-1]
-        is_present = desired_user_name in userId_conversion["user_id"].values
-        assert (
-            is_present
-        ), f"NCF Model Fail to Predict. User {desired_user_name} is not present"
+        # desired_user_name = user_id[1:-1]
+        is_present = user_id in userId_conversion["user_id"].str[0].values
+        assert is_present, f"NCF Model Fail to Predict. User {user_id} is not present"
         self.converted_userId = userId_conversion[
-            userId_conversion["user_id"] == desired_user_name
+            userId_conversion["user_id"] == user_id
         ]["userId"].values[0]
+        return self.converted_userId
 
     def convert_businessID(self, rating, itemId):
         """Convert the dataset business ID with preprocessed IDs"""
@@ -72,38 +102,10 @@ class RecommenderSystem:
             ]["business_id"].values[0]
             return converted_businessId
 
-    def load_model(self):
-        neumf = torch.load(self.model_checkpoint)
-        if self.model_size == "1k":
-            config = {
-                "num_users": 961,
-                "num_items": 1000,
-                "latent_dim_mf": 8,
-                "latent_dim_mlp": 8,
-                "num_negative": 4,
-                "layers": [16, 64, 32, 16, 8],
-                "use_cuda": True,
-            }
-        if self.model_size == "5k":
-            config = {
-                "num_users": 5000,
-                "num_items": 5000,
-                "latent_dim_mf": 8,
-                "latent_dim_mlp": 8,
-                "num_negative": 4,
-                "layers": [16, 64, 32, 16, 8],
-                "use_cuda": True,
-            }
+    # def load_model(self):
 
-        neumf_model = NeuMFArchitecture(config)
-        neumf_model.load_state_dict(neumf)
-        neumf_model = neumf_model.to(self.device)
-        neumf_model.eval()
-
-        return neumf_model
-
-    def infer(self, rating, predict_data):
-        self.convert_userID(rating)
+    def infer(self, user_id, rating, predict_data):
+        self.convert_userID(user_id, rating)
 
         with torch.no_grad():
             test_users, test_items = (
@@ -127,16 +129,20 @@ class RecommenderSystem:
         scores_array = _scores.cpu().numpy().flatten()
         return user_array, item_array, scores_array
 
-    def predict(self, rating, predict_data):
-        user_array, item_array, scores_array = self.infer(rating, predict_data)
-        unique_user_ids = np.unique(user_array)
+    def predict(self, rating, predict_data, target_user_id, top_k: int):
+        user_array, item_array, scores_array = self.infer(
+            target_user_id, rating, predict_data
+        )
+        unique_user_indexs = np.unique(user_array)
 
         reordered_scores = np.zeros_like(scores_array)
         reordered_items = np.zeros_like(item_array)
 
-        for user_id in unique_user_ids:
-            if user_id == self.converted_userId:
-                user_mask = user_array == user_id
+        target_user_index = self.convert_userID(target_user_id, rating)
+
+        for user_index in unique_user_indexs:
+            if user_index == target_user_index:
+                user_mask = user_array == user_index
                 user_scores = scores_array[user_mask]
                 items = item_array[user_mask]
 
@@ -147,10 +153,10 @@ class RecommenderSystem:
                 unique_reordered_items = list(
                     OrderedDict.fromkeys(reordered_items[user_mask])
                 )
-                topK_item = unique_reordered_items[: self.topK]
+                topK_item = unique_reordered_items[:top_k]
                 return topK_item
 
-    def eval4sample(self, rating, predict_data):
+    def eval4sample(self, rating, predict_data, top_k: int):
         """
         Evaluate the model by runing the sample test subdataset created by the group
         """
@@ -211,7 +217,7 @@ class RecommenderSystem:
                         unique_reordered_items = list(
                             OrderedDict.fromkeys(reordered_items[user_mask])
                         )
-                        topK_item = unique_reordered_items[: self.topK]
+                        topK_item = unique_reordered_items[top_k]
                         print(topK_item)
 
                         # Convert encoded item back to dataset businessID
@@ -286,7 +292,7 @@ if __name__ == "__main__":
 
     if not args.run_eval:
         print("-" * 10 + f"Top {args.topK} for {args.userId}" + "-" * 10)
-        topK_item = recommender.predict(rating, predict_data)
+        topK_item = recommender.predict(rating, predict_data, args.topK)
         topK_item_converted = []
         for item in topK_item:
             businessId = recommender.convert_businessID(rating=rating, itemId=item)
