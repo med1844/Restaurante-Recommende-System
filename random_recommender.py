@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from interface import RestaurantRecommenderInterface, Json
-from random import randint
+from random import randint, sample
 from result import Result, Ok, Err
 import numpy as np
 
@@ -18,7 +18,14 @@ class RandomRecommender(RestaurantRecommenderInterface):
     def predict(
         self, user_id: str, top_n: int = 5
     ) -> Result[List[Tuple[str, str, float]], str]:
-        raise NotImplementedError
+        return Ok(
+            list(
+                map(
+                    lambda x: (x["name"], x["business_id"], randint(1, 5)),
+                    sample(self.business, top_n),
+                )
+            )
+        )
 
     def eval(self, review: List[Json]) -> float:
         predicted_vals = []

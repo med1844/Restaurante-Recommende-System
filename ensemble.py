@@ -3,6 +3,7 @@ from typing import Iterable, List, Set, Tuple, Dict
 from result import Result, Ok, Err
 import math
 import numpy as np
+import tqdm
 
 
 # def dcg(scores: List[int]) -> float:
@@ -57,7 +58,7 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
             model.fit()
         # calculate ndcg on training set, evaluate weight
         # simply rank everything, then extract the ranking of ground truth
-        for user in self.users:
+        for user in tqdm.tqdm(self.users[:5]):
             user_reviews: Dict[str, int] = {
                 review["business_id"]: review["stars"]
                 for review in self.reviews_train
@@ -102,9 +103,9 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
         for model, model_w in zip(self.models, self.model_weight):
             match model.predict(user_id, top_n):
                 case Ok(recommendation):
-                    for *b, rating in recommendation:
-                        business_id_accu_rating.setdefault(b, 0.0)
-                        business_id_accu_rating[b] += rating * model_w
+                    for b_name, b_id, rating in recommendation:
+                        business_id_accu_rating.setdefault((b_name, b_id), 0.0)
+                        business_id_accu_rating[(b_name, b_id)] += rating * model_w
                 case Err(msg):
                     return Err(msg)
         top_ratings = list(business_id_accu_rating.items())
