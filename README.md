@@ -1,5 +1,11 @@
 # Restaurante Recommende System
 
+## Models
+
+For model-specific details, please refer to the README.md in each model's folder.
+
+For ensemble model, due to the fact that model folders containing special characters making them impossible to be imported in python, it's stored in `ensemble` branch due to incompatibilities. Once switched to `ensemble` branch, run `python main.py` to run the ensemble model.
+
 ## (Optional) Build a dev set
 
 ```python
