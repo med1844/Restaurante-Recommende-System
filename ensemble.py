@@ -58,7 +58,7 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
             model.fit()
         # calculate ndcg on training set, evaluate weight
         # simply rank everything, then extract the ranking of ground truth
-        for user in tqdm.tqdm(self.users[:5]):
+        for user in tqdm.tqdm(self.users):
             user_reviews: Dict[str, int] = {
                 review["business_id"]: review["stars"]
                 for review in self.reviews_train
@@ -84,7 +84,7 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
                             if business_id in user_reviews
                         ]
                         rmse = calc_rmse(pred_rating, gt_rating)
-                        model_reciprocal_rmses.append(1 / rmse)
+                        model_reciprocal_rmses.append((5 - 1) - rmse)
                     case Err(value):
                         raise ValueError(
                             "model %r goes wrong when predict in ensembler fit, reason: %s"

@@ -1,16 +1,18 @@
 from svd_sparse_cf import SVDSparseCollaborativeFilteringRecommender
-from AutoSVDpp.auto_svd_pp import AutoSVDPPRecommender
+from AutoSVDpp.auto_svd_pp import AutoSVDPPMatrixRecommender
 from NeuralCF.neural_cf import NeuralCFRecommender
 from data_utils import load_data
 from random import choice, seed
 from typing import List, Any, Tuple
 from random_recommender import RandomRecommender
 from ensemble import RMSEWeightedEnsembler
+from wide_deep_recommender import WideDeepRecommender
 from result import Ok, Err
 import json
 import torch
 import os
 import numpy as np
+import tqdm
 
 
 torch.cuda.is_available = lambda: False
@@ -36,11 +38,8 @@ def main():
     svd.load(open("svd_5913_28028_195455", "r"))
     model = RMSEWeightedEnsembler(
         [
-            AutoSVDPPRecommender(
-                os.path.abspath(
-                    "./AutoSVDpp/datasets/samplesets/restaurant_features_encoded.csv"
-                )
-            ),
+            WideDeepRecommender(business),
+            AutoSVDPPMatrixRecommender(),
             svd,
             RandomRecommender(business),
         ],
@@ -55,23 +54,26 @@ def main():
     for r in review_test:
         user_reviews[r["user_id"]][r["business_id"]] = r["stars"]
 
-    for u_id in map(lambda x: x["user_id"], user):
+    squared_diffs = []
+    for u_id in tqdm.tqdm(map(lambda x: x["user_id"], user), total=len(user)):
         predicted_vals = model.predict(
             u_id, list(user_reviews[u_id].keys()), top_n=len(user_reviews[u_id])
         )
         match predicted_vals:
             case Ok(val):
                 # we then calculate the rmse
-                squared_diffs = [
-                    (predicted_star - actual_star) ** 2
-                    for predicted_star, actual_star in map(
-                        lambda x: (x[2], user_reviews[u_id][x[1]]),
-                        filter(lambda x: x[1] in user_reviews[u_id], val),
-                    )
-                ]
-                print(np.sqrt(np.mean(squared_diffs)))
+                squared_diffs.extend(
+                    [
+                        (predicted_star - actual_star) ** 2
+                        for predicted_star, actual_star in map(
+                            lambda x: (x[2], user_reviews[u_id][x[1]]),
+                            filter(lambda x: x[1] in user_reviews[u_id], val),
+                        )
+                    ]
+                )
             case Err(msg):
                 print(msg)
+    print(np.sqrt(np.mean(squared_diffs)))
 
 
 if __name__ == "__main__":
