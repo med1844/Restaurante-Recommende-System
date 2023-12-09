@@ -8,6 +8,11 @@ We've changed and added:
 - Data: Subset of Yelp dataset
 - Training: training.ipynb
 - Inferencing code: `inference.py`
+- When inferencing, user_file is /Wide-N-Deep/SavedFiles/sample_users.pkl
+- When inferencing, model_path is /Wide-N-Deep/SavedFiles/model_27.pt
+- When inferencing, restaurants_file is /Wide-N-Deep/SavedFiles/encoded_restaurants.pkl
+- When inferencing, embedding_table_shapes_file is /Wide-N-Deep/SavedFiles/embedding_table_shapes.json
+
 
 ## Train and Test Data Statistics
 
