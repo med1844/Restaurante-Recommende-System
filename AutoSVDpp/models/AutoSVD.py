@@ -29,10 +29,16 @@ class AutoSVD():
 
         m, n = train_data.shape
         self.item_features = self.readItemFeature()
+
+        np.random.seed(6220)
+        
         V = np.random.rand(self.num_factors, n) * 0.01
         U = np.random.rand(self.num_factors, m) * 0.01
         B_U = np.zeros(m)
         B_I = np.zeros(n)
+
+        self.rmse_list = []
+        self.mae_list = []
 
         for epoch in range(self.epochs):
             print("[epoch=" + str(epoch + 1) + "] ", end="")
@@ -49,7 +55,9 @@ class AutoSVD():
             self.B_I = B_I
             self.V = V
             self.U = U
-            self.evaluate(test_data)
+            rmse, mae = self.evaluate(test_data)
+            self.rmse_list.append(rmse)
+            self.mae_list.append(mae)
     
     def predict(self, average_rating, b_u, b_i, U_u, V_i, itemfeatures):
         return average_rating + b_u + b_i + np.dot(U_u.T, (V_i +  itemfeatures))
@@ -71,16 +79,21 @@ class AutoSVD():
         return rmse,mae
   
     def save_model(self, directory='parameters/'):
-        # Save the matrix to the file
+        # Save the parameters of the model to the file
         np.savetxt(os.path.join(directory, "B_U.csv"), self.B_U, delimiter=',')
         np.savetxt(os.path.join(directory, "B_I.csv"), self.B_I, delimiter=',')
         np.save(os.path.join(directory, "V.npy"), self.V)
         np.save(os.path.join(directory, "U.npy"), self.U)
         np.save(os.path.join(directory, "beta.npy"), self.beta)
         np.save(os.path.join(directory, "average_rating.npy"), self.average_rating)
+        # Save rmse and mae during training
+        rmse_array = np.array(self.rmse_list, dtype=float)
+        np.savetxt(os.path.join(directory, "rmse.csv"), rmse_array, delimiter=',', fmt='%s')
+        mae_array = np.array(self.mae_list, dtype=float)
+        np.savetxt(os.path.join(directory, "mae.csv"), mae_array, delimiter=',', fmt='%s')
 
     def load_model(self, directory='parameters/'):
-        # Load the matrix from the file
+        # Load the parameters of the model from the file
         self.B_U = np.loadtxt(os.path.join(directory, "B_U.csv"))
         self.B_I = np.loadtxt(os.path.join(directory, "B_I.csv"))
         self.V = np.load(os.path.join(directory, "V.npy"))

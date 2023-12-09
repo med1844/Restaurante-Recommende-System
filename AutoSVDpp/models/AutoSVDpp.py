@@ -6,7 +6,7 @@ class AutoSVDpp():
     '''
     This is an efficient version of AutoSVD++ which uses sparse matrix.
     '''
-    def __init__(self, path_of_feature_file, epochs=30, num_factors=10,
+    def __init__(self, path_of_feature_file, epochs=30, num_factors=10, 
                  gamma1=0.007, gamma2 = 0.007, lambda1=0.005, lambda2=0.015, beta=0.1):
         self.epochs = epochs
         self.num_factors = num_factors
@@ -34,6 +34,8 @@ class AutoSVDpp():
         m, n = train_data.shape
         self.item_features = self.readItemFeature()
 
+        np.random.seed(6220)
+        
         V = np.random.rand(self.num_factors, n) * 0.01
         U = np.random.rand(self.num_factors, m) * 0.01
         Y = np.random.rand(n,self.num_factors) * 0.0
@@ -41,6 +43,8 @@ class AutoSVDpp():
         B_I = np.zeros(n)
 
         result = 0
+        self.rmse_list = []
+        self.mae_list = []
 
         for epoch in range(self.epochs):
             print("[epoch=" + str(epoch + 1) + "] ", end="")
@@ -72,7 +76,9 @@ class AutoSVDpp():
             self.V = V
             self.U = U
             self.Y = Y
-            self.evaluate(test_data)
+            rmse, mae = self.evaluate(test_data)
+            self.rmse_list.append(rmse)
+            self.mae_list.append(mae)
 
         # self.B_U = B_U
         # self.B_I = B_I
@@ -115,6 +121,11 @@ class AutoSVDpp():
         np.save(os.path.join(directory, "Y_pp.npy"), self.Y)
         np.save(os.path.join(directory, "beta_pp.npy"), self.beta)
         np.save(os.path.join(directory, "average_rating_pp.npy"), self.average_rating)
+        # Save rmse and mae during training
+        rmse_array = np.array(self.rmse_list, dtype=float)
+        np.savetxt(os.path.join(directory, "rmse_pp.csv"), rmse_array, delimiter=',', fmt='%s')
+        mae_array = np.array(self.mae_list, dtype=float)
+        np.savetxt(os.path.join(directory, "mae_pp.csv"), mae_array, delimiter=',', fmt='%s')
 
     def load_model(self, directory='parameters/'):
         # load the matrix from the file
