@@ -27,7 +27,7 @@ We've changed and added:
 | Completion Time  |   8min 36s       | 2min 26s   | 3min 52s   |
 
 CAE Loss Curve \
-<img src="pic/CAE_Loss.png" alt="cae loss" style="width:300px;height:200px;">
+<img src="pic/CAE_Loss.png" alt="cae loss" style="width:600px;height:400px;">
 
 AutoSVD++ Loss Curve \
 <img src="pic/AutoSVDpp_Loss.png" alt="autosvdpp loss" style="width:300px;height:200px;">
