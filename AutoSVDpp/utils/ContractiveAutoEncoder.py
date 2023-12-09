@@ -72,6 +72,7 @@ class CAE():
         data_loader = DataLoader(dataset, batch_size=64, shuffle=True)
 
         # Train the model
+        losses = []
         for epoch in range(epochs):
             for inputs, targets in data_loader:
                 optimizer.zero_grad()
@@ -79,9 +80,11 @@ class CAE():
                 loss = criterion(decoded, targets)
                 loss.backward()
                 optimizer.step()
+            losses.append(loss.item())
             print(f'Epoch {epoch+1}, Loss: {loss.item()}')
 
         self.model = model
+        return losses
 
     def extract_features(self, path=PATH_SAMPLE):
         self.model.eval()
