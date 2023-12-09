@@ -3,7 +3,7 @@ from interface import RestaurantRecommenderInterface
 from .inference import RecommenderSystem
 import os
 from functools import partial
-from result import Result
+from result import Result, Ok
 
 
 class NeuralCFRecommender(RestaurantRecommenderInterface):
@@ -14,7 +14,7 @@ class NeuralCFRecommender(RestaurantRecommenderInterface):
         self.rating, self.predict_data = self.model.load_data()
 
     def fit(self):
-        raise NotImplementedError()
+        pass
 
     def predict(
         self, user_id: str, top_n: int = 5
@@ -25,6 +25,4 @@ class NeuralCFRecommender(RestaurantRecommenderInterface):
             user_id,
             top_n,
         )
-        return Ok(
-            list(map(partial(self.model.convert_businessID, self.rating), top_k_item))
-        )
+        return Ok(top_k_item)

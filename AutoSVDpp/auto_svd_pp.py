@@ -8,12 +8,21 @@ from .utils.YelpRecommendationGenerator import YelpRecommendationGenerator
 class AutoSVDPPRecommender(RestaurantRecommenderInterface):
     def __init__(self, path_of_feature_file: str) -> None:
         self.auto_svd_pp = AutoSVD(path_of_feature_file)
-        self.auto_svd_pp.load_model(os.path.join(os.path.dirname(os.path.abspath(__file__)), "parameters/"))
+        self.auto_svd_pp.load_model(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "parameters/")
+        )
         self.yelp_recommender = YelpRecommendationGenerator(self.auto_svd_pp)
-        _ = self.yelp_recommender.load_small_dataset(os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets/subsets/"))
+        _ = self.yelp_recommender.load_small_dataset(
+            os.path.abspath("data"),
+            (
+                "sample_users.json",
+                "sample_business.json",
+                "sample_reviews_train.json",
+            ),
+        )
 
     def fit(self):
-        raise NotImplementedError()
+        pass
 
     def predict(self, user_id: str, top_n: int = 5):
         user_df = self.yelp_recommender.get_user_df(user_id)

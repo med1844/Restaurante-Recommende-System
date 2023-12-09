@@ -18,8 +18,8 @@ gmf_config = {'alias': 'gmf_factor8neg4-implict',
               # 'rmsprop_momentum': 0,
               'optimizer': 'adam',
               'adam_lr': 1e-3,
-              'num_users': 961,
-              'num_items': 1000,
+              'num_users': 5913, # 961
+              'num_items': 28028, # 1000
               'latent_dim': 8,
               'num_negative': 4,
               'l2_regularization': 0, # 0.01
@@ -32,8 +32,8 @@ mlp_config = {'alias': 'mlp_factor8neg4_bz256_166432168_pretrain_reg_0.0000001',
               'batch_size': 256,  # 1024,
               'optimizer': 'adam',
               'adam_lr': 1e-3,
-              'num_users': 961,
-              'num_items': 1000,
+              'num_users': 5913, # 961
+              'num_items': 28028, # 1000
               'latent_dim': 8,
               'num_negative': 4,
               'layers': [16,64,32,16,8],  # layers[0] is the concat of latent user vector & latent item vector
@@ -50,8 +50,8 @@ neumf_config = {'alias': 'pretrain_neumf_factor8neg4',
                 'batch_size': 1024, # 1024
                 'optimizer': 'adam',
                 'adam_lr': 1e-3,
-                'num_users': 5000, # 961
-                'num_items': 5000, # 1000
+                'num_users': 5913, # 961
+                'num_items': 28028, # 1000
                 'latent_dim_mf': 8,
                 'latent_dim_mlp': 8,
                 'num_negative': 4,
@@ -80,7 +80,7 @@ def main():
 
   # Load Data
   print('Loading Data....')
-  user_item_interactions = df = pd.read_json(args.data_dir, lines=True)
+  user_item_interactions = df = pd.read_json(args.data_dir, lines=False)
   df = pd.DataFrame(user_item_interactions)
   df = df.groupby(['user_id', 'business_id']).agg({'stars': 'mean'}).reset_index()
 

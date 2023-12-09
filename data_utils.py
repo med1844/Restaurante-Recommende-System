@@ -6,9 +6,6 @@ from collections import Counter
 from random import sample, seed
 
 
-seed(6220)
-
-
 def load_data(
     data_folder: str,
     filenames=(
@@ -16,20 +13,30 @@ def load_data(
         "yelp_academic_dataset_business.json",
         "yelp_academic_dataset_review.json",
     ),
+    line=True,
 ) -> Tuple[List[Any], ...]:
-    return tuple(
-        map(
-            lambda f: list(
+    match line:
+        case True:
+            return tuple(
                 map(
-                    json.loads,
-                    open(
-                        os.path.join(data_folder, f), "r", encoding="utf-8"
-                    ).readlines(),
+                    lambda f: list(
+                        map(
+                            json.loads,
+                            open(
+                                os.path.join(data_folder, f), "r", encoding="utf-8"
+                            ).readlines(),
+                        )
+                    ),
+                    filenames,
                 )
-            ),
-            filenames,
-        )
-    )
+            )
+        case False:
+            return tuple(
+                map(
+                    lambda f: json.load(open(os.path.join(data_folder, f), "r")),
+                    filenames,
+                )
+            )
 
 
 def save_data(
@@ -58,6 +65,8 @@ def gen_subset(
     # 1. among these reviews, select top `business_n` businesses that receives the most reviews
     # 2. among all reviews, select reviews posted by both top `user_n` users and to top `business_n` businesses
     # 3. randomly sample min(review_n, len(result of step 2)) reviews to form review subset
+
+    seed(6220)
     user_cnt = Counter(review["user_id"] for review in review_data)
     user_cnt = list(user_cnt.items())
     user_cnt.sort(key=lambda x: x[1], reverse=True)
