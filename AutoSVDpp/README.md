@@ -20,12 +20,14 @@ We've changed and added:
 
 ## Training and Inference Data Statistics
 
-Training data
+### Training data
 
 | Model            | CAE              | AutoSVD    | AutoSVD++  |
 |------------------|------------------|------------|------------|
 | Completion Time  |   8min 36s       | 2min 26s   | 3min 52s   |
 
+CAE Loss Curve \
+<img src="pic/CAE_Loss.png" alt="cae loss" style="width:225px;height:150px;">
 
 Testing data
 
