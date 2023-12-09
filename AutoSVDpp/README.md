@@ -30,7 +30,7 @@ CAE Loss Curve \
 <img src="pic/CAE_Loss.png" alt="cae loss" style="width:600px;height:400px;">
 
 AutoSVD++ Loss Curve \
-<img src="pic/AutoSVDpp_Loss.png" alt="autosvdpp loss" style="width:300px;height:200px;">
+<img src="pic/AutoSVDpp_Loss.png" alt="autosvdpp loss" style="width:600px;height:400px;">
 
 - AutoSVD: RMSE = 1.043, MAE = 0.799 
 - AutoSVDpp: RMSE = 1.040, MAE = 0.799
@@ -43,8 +43,8 @@ AutoSVD++ Loss Curve \
 | AutoSVDpp |   5.32s       | 5.45s   | 5.24s   | 14.3s | 15min 13s
 
 AutoSVD \
-<img src="pic/AutoSVD_top_k.png" alt="autosvd kk" style="width:300px;height:200px;">
+<img src="pic/AutoSVD_top_k.png" alt="autosvd kk" style="width:600px;height:400px;">
 
 AutoSVDpp \
-<img src="pic/AutoSVDpp_top_k.png" alt="autosvdpp kk" style="width:300px;height:200px;">
+<img src="pic/AutoSVDpp_top_k.png" alt="autosvdpp kk" style="width:600px;height:400px;">
 
