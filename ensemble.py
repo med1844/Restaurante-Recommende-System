@@ -1,5 +1,5 @@
 from interface import RestaurantRecommenderInterface, Json
-from typing import Iterable, List, Set, Tuple, Dict
+from typing import Iterable, List, Optional, Set, Tuple, Dict
 from result import Result, Ok, Err
 import math
 import numpy as np
@@ -64,9 +64,13 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
                 for review in self.reviews_train
                 if review["user_id"] == user["user_id"]
             }
-            model_rmses = []
+            model_reciprocal_rmses = []
             for model in self.models:
-                pred_rating = model.predict(user["user_id"], top_n=len(self.businesses))
+                pred_rating = model.predict(
+                    user["user_id"],
+                    list(user_reviews.keys()),
+                    top_n=len(user_reviews),
+                )
                 match pred_rating:
                     case Ok(value):
                         pred_rating = [
@@ -80,14 +84,14 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
                             if business_id in user_reviews
                         ]
                         rmse = calc_rmse(pred_rating, gt_rating)
-                        model_rmses.append(rmse)
+                        model_reciprocal_rmses.append(1 / rmse)
                     case Err(value):
                         raise ValueError(
                             "model %r goes wrong when predict in ensembler fit, reason: %s"
                             % (model, value)
                         )
-            rmse_sum = sum(model_rmses)
-            for i, val in enumerate(model_rmses):
+            rmse_sum = sum(model_reciprocal_rmses)
+            for i, val in enumerate(model_reciprocal_rmses):
                 self.model_weight[i] += val / rmse_sum
 
         acc_rmse_sum = sum(self.model_weight)
@@ -95,13 +99,13 @@ class RMSEWeightedEnsembler(RestaurantRecommenderInterface):
             self.model_weight[i] /= acc_rmse_sum
 
     def predict(
-        self, user_id: str, top_n: int = 5
+        self, user_id: str, business_ids: Optional[List[str]] = None, top_n: int = 5
     ) -> Result[List[Tuple[str, str, float]], str]:
         # each predicted business rating multiplies with the model weight
         # if there's more models recommending the same one, that one got add up score
         business_id_accu_rating = {}
         for model, model_w in zip(self.models, self.model_weight):
-            match model.predict(user_id, top_n):
+            match model.predict(user_id, business_ids, top_n):
                 case Ok(recommendation):
                     for b_name, b_id, rating in recommendation:
                         business_id_accu_rating.setdefault((b_name, b_id), 0.0)

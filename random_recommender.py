@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from interface import RestaurantRecommenderInterface, Json
 from random import randint, sample
 from result import Result, Ok, Err
@@ -8,21 +8,27 @@ import numpy as np
 class RandomRecommender(RestaurantRecommenderInterface):
     def __init__(self, business: List[Json]) -> None:
         self.business = business
-        # self.business_id_map = {
-        #     business["business_id"]: i for i, business in enumerate(business)
-        # }
+        self.business_id_map = {
+            business["business_id"]: i for i, business in enumerate(business)
+        }
 
     def fit(self):
         pass
 
     def predict(
-        self, user_id: str, top_n: int = 5
+        self, user_id: str, business_ids: Optional[List[str]], top_n: int = 5
     ) -> Result[List[Tuple[str, str, float]], str]:
+        if business_ids is None:
+            business_ids = list(map(lambda x: x["business_id"], self.business))
         return Ok(
             list(
                 map(
-                    lambda x: (x["name"], x["business_id"], randint(1, 5)),
-                    sample(self.business, top_n),
+                    lambda x: (
+                        self.business[self.business_id_map[x]]["name"],
+                        x,
+                        randint(1, 5),
+                    ),
+                    sample(business_ids, top_n),
                 )
             )
         )

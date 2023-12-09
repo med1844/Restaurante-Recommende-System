@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any
 from abc import ABC, abstractmethod
 from result import Result
 from io import TextIOWrapper
@@ -14,7 +14,7 @@ class RestaurantRecommenderInterface(ABC):
 
     @abstractmethod
     def predict(
-        self, user_id: str, top_n: int = 5
+        self, user_id: str, business_ids: Optional[List[str]] = None, top_n: int = 5
     ) -> Result[List[Tuple[str, str, float]], str]:
         # return a list of (business name, business_id, estimated rating)
         pass

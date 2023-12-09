@@ -132,12 +132,17 @@ class SVDSparseCollaborativeFilteringRecommender(
         )
 
     def predict(
-        self, user_id: str, top_n: int = 5
+        self, user_id: str, business_ids: Optional[List[str]] = None, top_n: int = 5
     ) -> Result[List[Tuple[str, str, float]], str]:
+        if business_ids is None:
+            business_ids = list(self.business_id_map.keys())
         user_i = self.user_id_map[user_id]
         user_bias = self.user_star_avg[user_i]
         match self.model.predict(
-            [(self.user_id_map[user_id], i) for i in self.business_id_map.values()],
+            [
+                (self.user_id_map[user_id], self.business_id_map[b_id])
+                for b_id in business_ids
+            ],
             top_n,
         ):
             case Ok(res):
